@@ -1,6 +1,6 @@
-package io.vithor
+package io.vithor.facades
 
 interface ConnEvent {
-    val code: Int
+    val code: Long
     val data: String
 }

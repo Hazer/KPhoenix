@@ -5,17 +5,18 @@ package io.vithor
 const val VSN = "2.0.0"
 
 enum class SocketStates(val code: Int) {
-    Connecting(0),
-    Open(1),
-    Closing(2),
-    Closed(3)
+    Created(0),
+    Connecting(1),
+    Open(2),
+    Closing(3),
+    Closed(4)
 }
 
-const val DEFAULT_TIMEOUT = 10000
-const val WS_CLOSE_NORMAL = 1000
+const val DEFAULT_TIMEOUT = 10000L
+const val WS_CLOSE_NORMAL = 1000L
 
-const val PHOENIX_DEFAULT_TIMEOUT: Int = DEFAULT_TIMEOUT
-const val PHOENIX_DEFAULT_HEARTBEAT: Int = 30000
+const val PHOENIX_DEFAULT_TIMEOUT: Long = DEFAULT_TIMEOUT
+const val PHOENIX_DEFAULT_HEARTBEAT: Long = 30000
 
 //enum class ChannelStates(val text: String) {
 //    Closed("closed"),
@@ -64,7 +65,8 @@ enum class TRANSPORTS(val path: String) {
 
 typealias Milliseconds = Number
 
-typealias RetriesCallback = ((tries: Int) -> Int)
+typealias RetriesCallback = ((tries: Int) -> Long)
 
+typealias MessageCallback = (message: Message?) -> Unit
 
 

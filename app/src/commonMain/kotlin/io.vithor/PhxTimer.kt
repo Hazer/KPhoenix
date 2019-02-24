@@ -1,5 +1,9 @@
 package io.vithor
 
+import io.vithor.facades.OSTimer
+import io.vithor.facades.clearTimeout
+import io.vithor.facades.setTimeout
+
 /**
  *
  * Creates a timer that accepts a `timerCalc` function to perform
@@ -17,7 +21,7 @@ package io.vithor
  * @param {Function} callback
  * @param {Function} timerCalc
  */
-class PhxTimer(val callback: () -> Unit, val timerCalc: (tries: Int) -> Int) {
+class PhxTimer(val callback: () -> Unit, val timerCalc: RetriesCallback) {
 
     private var timer: OSTimer? = null
 

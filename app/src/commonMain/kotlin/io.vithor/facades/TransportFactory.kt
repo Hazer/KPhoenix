@@ -1,6 +1,6 @@
-package io.vithor
+package io.vithor.facades
 
 interface TransportFactory {
-
-    operator fun invoke(endPoint: String): Transport?
+    val path: String
+    operator fun invoke(endPoint: String, longpollerTimeout: Long): Transport?
 }

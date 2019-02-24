@@ -1,5 +1,9 @@
 package io.vithor
 
+import io.vithor.facades.DefaultJson
+import io.vithor.facades.JSON
+import io.vithor.facades.parse
+
 typealias DecoderMethod = (rawPayload: String, callback: (message: Message?) -> Unit) -> Unit
 
 abstract class Serializer(private val jsonFacade: JSON) {

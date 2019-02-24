@@ -1,17 +1,20 @@
 package io.vithor
 
-open class LongPoll(endPoint: String) : Transport {
-    open fun normalizeEndpoint(endPoint: String): String = TODO()
-    open fun endpointURL(): String = TODO()
-    open fun closeAndRetry(): Unit = TODO()
-    open fun ontimeout(): Unit = TODO()
-    open fun poll(): Unit = TODO()
-    open fun send(body: Any): Unit = TODO()
-    open fun close(code: Any? = TODO(), reason: Any? = TODO()): Unit = TODO()
+import io.vithor.facades.Transport
+import io.vithor.facades.TransportFactory
+
+abstract class LongPoll(val endPoint: String) : Transport {
+    override val transportPath: String
+        get() = path
 
     companion object : TransportFactory {
-        override operator fun invoke(endPoint: String): LongPoll {
-            return LongPoll(endPoint)
+        override val path: String
+            get() = TRANSPORTS.Longpoll.path
+
+        override fun invoke(endPoint: String, longpollerTimeout: Long): LongPoll? {
+            return TRANSPORT_BAG.find { transportClass ->
+                transportClass.supertypes.any { it.classifier == LongPoll::class }
+            }?.constructors?.firstOrNull()?.call(endPoint) as? LongPoll
         }
     }
 }

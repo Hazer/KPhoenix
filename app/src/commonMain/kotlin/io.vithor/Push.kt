@@ -1,5 +1,9 @@
 package io.vithor
 
+import io.vithor.facades.OSTimer
+import io.vithor.facades.clearTimeout
+import io.vithor.facades.setTimeout
+
 open class Push(val channel: Channel, val event: String, payload: SocketPayload?, var timeout: Milliseconds) {
     var receivedResp: Message? = null
     var timeoutTimer: OSTimer? = null
@@ -76,10 +80,6 @@ open class Push(val channel: Channel, val event: String, payload: SocketPayload?
         this.timeoutTimer = null
     }
 
-    private fun clearTimeout(timeoutTimer: OSTimer?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     internal fun startTimeout() {
         if (this.timeoutTimer != null) {
             this.cancelTimeout()
@@ -100,11 +100,7 @@ open class Push(val channel: Channel, val event: String, payload: SocketPayload?
 
         this.timeoutTimer = setTimeout({
             this.trigger("timeout", mutableMapOf())
-        }, this.timeout)
-    }
-
-    private fun setTimeout(function: () -> Unit, timeout: Milliseconds): OSTimer {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }, this.timeout.toLong())
     }
 
     private fun hasReceived(status: String): Boolean {

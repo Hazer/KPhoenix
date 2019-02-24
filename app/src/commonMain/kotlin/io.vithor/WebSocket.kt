@@ -1,19 +1,22 @@
 package io.vithor
 
-open class WebSocket(endPoint: String) : Transport {
+import io.vithor.facades.Transport
+import io.vithor.facades.TransportFactory
 
+abstract class WebSocket(val endPoint: String) : Transport {
+    override val transportPath: String
+        get() = path
 
-    open fun normalizeEndpoint(endPoint: String): String = TODO()
-    open fun endpointURL(): String = TODO()
-    open fun closeAndRetry(): Unit = TODO()
-    open fun ontimeout(): Unit = TODO()
-    open fun poll(): Unit = TODO()
-    open fun send(body: Any): Unit = TODO()
-    open fun close(code: Any? = TODO(), reason: Any? = TODO()): Unit = TODO()
+    override val skipHeartbeat: Boolean = false
 
     companion object : TransportFactory {
-        override operator fun invoke(endPoint: String): WebSocket? {
-            return WebSocket(endPoint)
+        override val path: String
+            get() =  TRANSPORTS.Websocket.path
+
+        override operator fun invoke(endPoint: String, longpollerTimeout: Long): WebSocket? {
+            return TRANSPORT_BAG.find { transportClass ->
+                transportClass.supertypes.any { it.classifier == WebSocket::class }
+            }?.constructors?.firstOrNull()?.call(endPoint) as? WebSocket
         }
     }
 }

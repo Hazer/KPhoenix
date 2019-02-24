@@ -1,8 +1,6 @@
 package io.vithor
 
-typealias MessageCallback = (message: Message?) -> Unit
-
-open class Channel(val topic: String, val params: SocketPayload?, val socket: Socket) {
+open class Channel(val topic: String, val payload: SocketPayload?, val socket: Socket) {
 
     private var joinedOnce: Boolean = false
 
@@ -25,7 +23,7 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
 
     init {
 
-        this.joinPush = Push(this, ChannelEvents.Join.event, this.params, this.timeout)
+        this.joinPush = Push(this, ChannelEvents.Join.event, this.payload, this.timeout)
         this.rejoinTimer = PhxTimer({ this.rejoinUntilConnected() }, this.socket.reconnectAfterMs)
 
         this.joinPush.receive("ok") {
@@ -38,7 +36,11 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
 
         this.onClose {
             this.rejoinTimer.reset()
-            if (this.socket.hasLogger()) this.socket.log("channel", "close ${this.topic} ${this.joinRef()}")
+
+            hasLogger {
+                logger("channel", "close ${this.topic} ${this.joinRef()}")
+            }
+
             this.state = ChannelStates.Closed
             this.socket.remove(this)
         }
@@ -47,8 +49,10 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
             if (this.isLeaving() || this.isClosed()) {
                 return@onError
             }
-            if (this.socket.hasLogger())
-                this.socket.log("channel", "error ${this.topic}", reason)
+
+            hasLogger {
+                logger("channel", "error ${this.topic}", reason)
+            }
 
             this.state = ChannelStates.Errored
             this.rejoinTimer.scheduleTimeout()
@@ -78,6 +82,16 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
         }
     }
 
+    private fun logger(kind: String, msg: String, data: Any? = null) {
+        this.socket.log(kind, msg, data)
+    }
+
+    private inline fun hasLogger(block: () -> Unit) {
+        if (this.socket.hasLogger()) {
+            block()
+        }
+    }
+
     internal fun rejoinUntilConnected() {
         this.rejoinTimer.scheduleTimeout()
         if (this.socket.isConnected()) {
@@ -95,11 +109,16 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
         }
     }
 
+    open fun join(timeout: Number = this.timeout, block: Push.() -> Unit): Push {
+        return join(timeout).also(block)
+    }
+
     open fun leave(timeout: Number = this.timeout): Push {
         this.state = ChannelStates.Leaving
         val onClose: MessageCallback = { message ->
-            if (this.socket.hasLogger())
-                this.socket.log("channel", "leave ${this.topic}")
+            hasLogger {
+                logger("channel", "leave ${this.topic}")
+            }
 
             this.trigger(ChannelEvents.Close.event, message)
         }
@@ -187,6 +206,7 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
     }
 
     internal fun isLifecycleEvent(event: ChannelEvents): Boolean = CHANNEL_LIFECYCLE_EVENTS.indexOf(event) >= 0
+
     internal fun isLifecycleEvent(event: String): Boolean =
         CHANNEL_LIFECYCLE_EVENTS.map { it.event }.indexOf(event) >= 0
 
@@ -195,8 +215,9 @@ open class Channel(val topic: String, val params: SocketPayload?, val socket: So
 
         return if (message.joinRef != null && message.joinRef != this.joinRef() && this.isLifecycleEvent(message.event)) {
 
-            if (this.socket.hasLogger())
-                this.socket.log("channel", "dropping outdated message", message)
+            hasLogger {
+                logger("channel", "dropping outdated message", message)
+            }
 
             false
         } else {

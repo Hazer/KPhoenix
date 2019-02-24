@@ -4,9 +4,9 @@
     <facet type="kotlin-language" name="Kotlin">
       <configuration version="3" platform="Native " useProjectSettings="false" isTestModule="true" externalProjectId=":app">
         <sourceSets>
-          <sourceSet>KPhoenix.app.iosMain</sourceSet>
-          <sourceSet>KPhoenix.app.commonMain</sourceSet>
           <sourceSet>KPhoenix.app.commonTest</sourceSet>
+          <sourceSet>KPhoenix.app.commonMain</sourceSet>
+          <sourceSet>KPhoenix.app.iosMain</sourceSet>
         </sourceSets>
         <newMppModelJpsModuleKind>COMPILATION_AND_SOURCE_SET_HOLDER</newMppModelJpsModuleKind>
         <compilerSettings />

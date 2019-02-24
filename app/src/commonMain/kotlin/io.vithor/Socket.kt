@@ -1,5 +1,7 @@
 package io.vithor
 
+import io.vithor.facades.*
+
 typealias SocketPayload = MutableMap<String, Any>
 
 /** Initializes the Socket
@@ -59,33 +61,31 @@ typealias SocketPayload = MutableMap<String, Any>
  *
  */
 
-open class Socket(url: String, opts: Options) {
+open class Socket(url: String, opts: Options = Options()) {
+    class Options(
+        val reconnectAfterMs: RetriesCallback? = null,
+        val encode: ((msg: Message, callback: (String) -> Unit) -> Unit)? = null,
+        val decode: DecoderMethod? = null,
+        val transport: TransportFactory? = null,
+        val timeout: Long? = null,
+        val heartbeatIntervalMs: Long? = null,
+        val logger: ((kind: String, msg: String, data: Any?) -> Unit)? = null,
+        val longpollerTimeout: Long? = null,
+        val params: Map<String, String>? = null
+    )
 
     internal var channels: MutableList<Channel> = mutableListOf()
 
-    var timeout: Int = PHOENIX_DEFAULT_TIMEOUT
+    var timeout: Long = PHOENIX_DEFAULT_TIMEOUT
 
     /// Set to true once the channel calls .join()
     var joinedOnce: Boolean = false
 
-    var heartbeatIntervalMs: Int = PHOENIX_DEFAULT_HEARTBEAT
-
-    class Options {
-        val reconnectAfterMs: RetriesCallback? = null
-        val encode: ((msg: Message, callback: (String) -> Unit) -> Unit)? = null
-        val decode: DecoderMethod? = null
-        val transport: TransportFactory? = null
-        val timeout: Int? = null
-        val heartbeatIntervalMs: Int? = null
-        val logger: ((kind: String, msg: String, data: Any?) -> Unit)? = null
-        val longpollerTimeout: Int? = null
-        val params: Map<String, String>? = null
-
-    }
+    var heartbeatIntervalMs: Long = PHOENIX_DEFAULT_HEARTBEAT
 
     private var reconnectTimer: PhxTimer
 
-    val reconnectAfterMs: (tries: Int) -> Int
+    val reconnectAfterMs: RetriesCallback
 
     private var defaultEncoder: (msg: Message, callback: (String) -> Unit) -> Unit
     private var defaultDecoder: DecoderMethod
@@ -101,7 +101,7 @@ open class Socket(url: String, opts: Options) {
 
     private var sendBuffer: MutableList<() -> Unit>
 
-    private var longpollerTimeout: Int
+    private var longpollerTimeout: Long
 
     private var params: Map<String, String>
 
@@ -139,7 +139,7 @@ open class Socket(url: String, opts: Options) {
         this.heartbeatIntervalMs = opts.heartbeatIntervalMs ?: 30000
 
         this.reconnectAfterMs = opts.reconnectAfterMs ?: { tries: Int ->
-            listOf(1000, 2000, 5000, 10000).getOrNull(tries - 1) ?: 10000
+            listOf(1000L, 2000, 5000, 10000).getOrNull(tries - 1) ?: 10000
         }
 
         this.logger = opts.logger
@@ -147,7 +147,7 @@ open class Socket(url: String, opts: Options) {
         this.longpollerTimeout = opts.longpollerTimeout ?: 20000
         this.params = opts.params ?: mutableMapOf()
 
-        this.location = Location("$url/${TRANSPORTS.Websocket.path}")
+        this.location = Location("$url/${transport.path}")
 
         this.heartbeatTimer = null
         this.pendingHeartbeatRef = null
@@ -160,10 +160,11 @@ open class Socket(url: String, opts: Options) {
 //    open fun protocol(): String = if (location.protocol.matches("/^https/".toRegex())) "wss" else "ws"
 
     open fun endPointURL(): String {
-        return location.with(this.params, mapOf("vsn" to VSN))
+        return location
+            .with(this.params, mapOf("vsn" to VSN))
     }
 
-    open fun disconnect(callback: () -> Unit, code: Int?, reason: String?) {
+    open fun disconnect(callback: () -> Unit, code: Long?, reason: String?) {
         this.reconnectTimer.reset()
         this.teardown(callback, code, reason)
     }
@@ -172,8 +173,7 @@ open class Socket(url: String, opts: Options) {
 
     open fun connect(params: Map<String, String>? = null) {
         if (params != null) {
-//            console && console.log("passing params to connect is deprecated. Instead pass :params to the Socket constructor")
-
+            log("deprecation", "passing params to connect is deprecated. Instead pass :params to the Socket constructor")
             this.params = params
         }
 
@@ -181,8 +181,7 @@ open class Socket(url: String, opts: Options) {
             return
         }
 
-        this.conn = this.transport(this.endPointURL())!!.also { conn ->
-            conn.timeout = this.longpollerTimeout
+        this.conn = this.transport(this.endPointURL(), this.longpollerTimeout)!!.also { conn ->
             conn.onopen = { this.onConnOpen() }
             conn.onerror = { error -> this.onConnError(error) }
             conn.onmessage = { event -> this.onConnMessage(event) }
@@ -194,13 +193,21 @@ open class Socket(url: String, opts: Options) {
         this.logger?.invoke(kind, msg, data)
     }
 
-//    open fun onOpen(callback: Function<*>): Unit = TODO()
-//    open fun onClose(callback: Function<*>): Unit = TODO()
-//    open fun onError(callback: Function<*>): Unit = TODO()
-//
-//    open fun onMessage(callback: Function<*>) {
-//        this.stateChangeCallbacks.message.add(callback)
-//    }
+    fun onOpen(callback: () -> Unit) {
+        this.stateChangeCallbacks.open.add(callback)
+    }
+
+    fun onClose(callback: (ConnClose?) -> Unit) {
+        this.stateChangeCallbacks.close.add(callback)
+    }
+
+    fun onError(callback: (ConnEvent?) -> Unit) {
+        this.stateChangeCallbacks.error.add(callback)
+    }
+
+    fun onMessage(callback: MessageCallback) {
+        this.stateChangeCallbacks.message.add(callback)
+    }
 
     open fun onConnOpen() {
         if (this.hasLogger()) this.log("path", "connected to ${this.endPointURL()}")
@@ -220,7 +227,7 @@ open class Socket(url: String, opts: Options) {
         this.heartbeatTimer = setInterval({ this.sendHeartbeat() }, this.heartbeatIntervalMs)
     }
 
-    internal fun teardown(callback: (() -> Unit)?, code: Int? = null, reason: String? = null) {
+    internal fun teardown(callback: (() -> Unit)?, code: Long? = null, reason: String? = null) {
         this.conn?.let { conn ->
             conn.onclose = {} // noop
 
@@ -237,8 +244,9 @@ open class Socket(url: String, opts: Options) {
         callback?.invoke()
     }
 
-    open fun onConnClose(event: ConnEvent?) {
-        if (this.hasLogger()) this.log("path", "close", event)
+    open fun onConnClose(event: ConnClose?) {
+        if (hasLogger()) log("path", "close", event)
+
         this.triggerChanError()
         clearInterval(this.heartbeatTimer)
         if (event != null && event.code != WS_CLOSE_NORMAL) {
@@ -282,7 +290,7 @@ open class Socket(url: String, opts: Options) {
         return chan
     }
 
-    open fun push(data: Message) {
+    internal fun push(data: Message) {
         if (this.hasLogger()) {
             val (topic, event, payload, ref, join_ref) = data
             this.log("push", "$topic $event ($join_ref, $ref)", payload)

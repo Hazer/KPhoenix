@@ -12,4 +12,10 @@ data class Message(
         set(value) {
             payload["status"] = value as Any
         }
+
+    operator fun Message.get(key: String): Any? {
+        return payload[key]
+    }
+
+    constructor(vararg data: Pair<String, Any>) : this(payload = data.toMap().toMutableMap())
 }

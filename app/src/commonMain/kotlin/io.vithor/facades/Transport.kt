@@ -1,16 +1,20 @@
-package io.vithor
+package io.vithor.facades
+
+import io.vithor.SocketStates
 
 interface Transport {
-    fun close(code: Int, reason: String)
-    fun close()
-    fun send(rawPayload: String)
+    val transportPath: String
 
-    var timeout: Int
+    val skipHeartbeat: Boolean
+
+    fun close(code: Long, reason: String)
+    fun close()
+
+    fun send(rawPayload: String)
+    var timeout: Long
     var onopen: () -> Unit
     val readyState: SocketStates
-    var onclose: (ConnEvent?) -> Unit
-    val skipHeartbeat: Boolean
+    var onclose: (ConnClose?) -> Unit
     var onerror: (ConnEvent) -> Unit
     var onmessage: (ConnEvent) -> Unit
-
 }

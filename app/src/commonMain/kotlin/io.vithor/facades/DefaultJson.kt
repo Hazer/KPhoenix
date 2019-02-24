@@ -1,12 +1,5 @@
-package io.vithor
+package io.vithor.facades
 
-object DefaultJson : JSON {
-    override fun <T> stringify(data: T): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+expect object DefaultJson : JSON
 
-    override fun <T> parse(rawPayload: String): T? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-}
+var defaultJson = DefaultJson
