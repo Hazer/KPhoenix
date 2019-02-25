@@ -74,3 +74,9 @@ actual fun setTimeout(function: () -> Unit, delay: Long): OSTimer {
         it.setTimeout(function, delay)
     }
 }
+
+private val handler = Handler(Looper.getMainLooper())
+
+actual fun onMainThread(function: () -> Unit) {
+    handler.post(function)
+}

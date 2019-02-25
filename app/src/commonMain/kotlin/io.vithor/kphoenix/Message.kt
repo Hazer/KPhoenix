@@ -14,13 +14,13 @@ data class Message(
             payload["status"] = value as Any
         }
 
-    inline operator fun Message.get(key: String): Any? {
-        return payload[key]
-    }
+    inline operator fun Message.get(key: String): Any? = payload[key]
 
     inline operator fun Message.set(key: String, value: Any) {
         payload[key] = value
     }
+
+    operator fun get(key: String): Any? = payload[key]
 
     constructor(vararg data: Pair<String, Any>) : this(payload = data.toMap().toMutableMap())
 }

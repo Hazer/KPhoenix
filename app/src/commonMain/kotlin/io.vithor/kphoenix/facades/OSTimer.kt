@@ -14,3 +14,5 @@ expect fun clearInterval(timer: OSTimer?)
 expect fun clearTimeout(timer: OSTimer?)
 
 expect fun setTimeout(function: () -> Unit, delay: Long): OSTimer
+
+expect fun onMainThread(function: () -> Unit)

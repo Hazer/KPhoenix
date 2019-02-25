@@ -1,5 +1,6 @@
 package io.vithor.kphoenix.facades
 
+import com.neovisionaries.ws.client.WebSocketException
 import com.neovisionaries.ws.client.WebSocketFactory
 import com.neovisionaries.ws.client.WebSocketFrame
 import com.neovisionaries.ws.client.WebSocketState
@@ -25,19 +26,29 @@ class NVWebSocket(endpoint: String, override var timeout: Long) : WebSocket(endp
 
             override fun onDisconnected(
                 websocket: com.neovisionaries.ws.client.WebSocket,
-                serverCloseFrame: WebSocketFrame,
-                clientCloseFrame: WebSocketFrame,
+                serverCloseFrame: WebSocketFrame?,
+                clientCloseFrame: WebSocketFrame?,
                 closedByServer: Boolean
             ) {
                 super.onDisconnected(websocket, serverCloseFrame, clientCloseFrame, closedByServer)
                 onclose.invoke(object : ConnClose {
                     override val code: Long
-                        get() = if (closedByServer) serverCloseFrame.closeCode.toLong() else clientCloseFrame.closeCode.toLong()
+                        get() = if (closedByServer) serverCloseFrame.closeCode else clientCloseFrame.closeCode
                     override val data: String
                         get() = if (closedByServer) serverCloseFrame.payloadText else clientCloseFrame.payloadText
 
                 })
             }
+
+            val WebSocketFrame?.closeCode: Long
+                get() {
+                    return this?.closeCode?.toLong() ?: -1
+                }
+
+            val WebSocketFrame?.payloadText: String
+                get() {
+                    return this?.payloadText ?: ""
+                }
 
             override fun onTextMessage(websocket: com.neovisionaries.ws.client.WebSocket, text: String) {
                 super.onTextMessage(websocket, text)
@@ -46,6 +57,17 @@ class NVWebSocket(endpoint: String, override var timeout: Long) : WebSocket(endp
                         get() = 0L
                     override val data: String
                         get() = text
+
+                })
+            }
+
+            override fun onError(websocket: com.neovisionaries.ws.client.WebSocket, cause: WebSocketException) {
+                super.onError(websocket, cause)
+                onerror.invoke(object : ConnEvent {
+                    override val code: Long
+                        get() = cause.error.ordinal.toLong()
+                    override val data: String
+                        get() = "${cause.error.name}: ${cause.localizedMessage}"
 
                 })
             }

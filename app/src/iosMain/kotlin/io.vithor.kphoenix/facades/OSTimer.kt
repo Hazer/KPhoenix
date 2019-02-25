@@ -22,3 +22,7 @@ actual fun clearTimeout(timer: OSTimer?) {
 actual fun setTimeout(function: () -> Unit, delay: Long): OSTimer {
     TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
 }
+
+actual fun onMainThread(function: () -> Unit) {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+}

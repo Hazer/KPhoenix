@@ -25,7 +25,7 @@ open class NVWebSocketAdapter : WebSocketListener {
     @Throws(Exception::class)
     override fun onDisconnected(
         websocket: WebSocket,
-        serverCloseFrame: WebSocketFrame, clientCloseFrame: WebSocketFrame,
+        serverCloseFrame: WebSocketFrame?, clientCloseFrame: WebSocketFrame?,
         closedByServer: Boolean
     ) {
         Timber.d("onDisconnected closedByServer? $closedByServer\n server: $serverCloseFrame\nclient:$clientCloseFrame")

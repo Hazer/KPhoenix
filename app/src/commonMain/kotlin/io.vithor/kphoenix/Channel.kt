@@ -1,5 +1,7 @@
 package io.vithor.kphoenix
 
+import io.vithor.kphoenix.facades.onMainThread
+
 open class Channel(val topic: String, val payload: SocketPayload?, val socket: Socket) {
 
     /// Set to true once the channel calls .join()
@@ -251,7 +253,10 @@ open class Channel(val topic: String, val payload: SocketPayload?, val socket: S
             if (bind.event != event) {
                 continue
             }
-            bind.callback(message)
+
+            onMainThread {
+                bind.callback(message)
+            }
         }
     }
 

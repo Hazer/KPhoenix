@@ -164,7 +164,7 @@ open class Socket(url: String, opts: Options = Options()) {
             }
     }
 
-    open fun disconnect(callback: () -> Unit, code: Long?, reason: String?) {
+    open fun disconnect(callback: () -> Unit, code: Long = WS_CLOSE_NORMAL, reason: String? = "User disconnected") {
         this.reconnectTimer.reset()
         this.teardown(callback, code, reason)
     }
