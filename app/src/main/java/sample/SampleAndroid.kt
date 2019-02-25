@@ -6,6 +6,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import io.vithor.kphoenix.Message
 import io.vithor.kphoenix.Presence
 import io.vithor.kphoenix.Socket
@@ -60,6 +61,11 @@ class MainActivity : AppCompatActivity() {
 
                 presence.onJoin { key, currentPresence, newPresence ->
                     Timber.d("Presence Join: $key, $currentPresence, $newPresence")
+                    if (key != "23" && newPresence["metas"] != null) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "$key got online!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
 
                 presence.onSync {
